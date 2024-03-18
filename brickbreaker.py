@@ -25,9 +25,9 @@ class Ball(GameObject):
 
     def move(self):
         coords = self.getCoords()
-        if coords[0] <= 0 or coords[2] >= 900:
+        if coords[0] <= 0 or coords[2] >= 1200:
             self.direction[0] *= -1
-        if coords[1] >= 600 or coords[1] <= 0:
+        if coords[1] >= 800 or coords[1] <= 0:
             self.direction[1] *= -1
         x = self.direction[0] * self.speed
         y = self.direction[1] * self.speed
@@ -40,18 +40,38 @@ class Ball(GameObject):
             object = objects[0]
             coords = object.getCoords()
             if x > coords[2]:
-                self.direction[0] = 1
+                self.direction[0] = -1
             elif x < coords[0]:
                 self.direction[0] = -1
             else:
                 self.direction[1] *= -1
+                self.speed *= 1.1
+               # if x < (coords[2] + coords[0]) * 0.5 and isinstance(object, Paddle):
+    #                self.direction[0] = -1
+     #           elif x > (coords[2] + coords[0]) * 0.5 and isinstance(object, Paddle):
+      #              self.direction[0] = 1
+            if (isinstance(object, Brick)):
+                object.deleteObject()
+        elif len(objects) > 1:
+            for y in objects:
+                coords = y.getCoords()
+                if x > coords[2]:
+                    self.direction[0] = 1
+                elif x < coords[0]:
+                    self.direction[0] = -1
+                else:
+                    self.direction[1] *= -1
+                if (isinstance(y, Brick)):
+                    y.deleteObject()
+
+
 
 class Paddle(GameObject):
     def __init__(self, canvas, width, height):
         self.width = width
         self.height = height
         self.offset = 0
-        item = canvas.create_rectangle(400, 580, 400 + self.width, 580 + self.height, fill="black", outline="blue")
+        item = canvas.create_rectangle(600, 780, 600 + self.width, 780 + self.height, fill="black", outline="blue")
         super(Paddle,self).__init__(canvas, item)
     
     def move(self, speed):
@@ -60,12 +80,22 @@ class Paddle(GameObject):
         if coords[0] + speed >= 0 and coords[2] + speed <= width:
             super(Paddle, self).move(speed, 0)
 
+class Brick(GameObject):
+    def __init__(self, canvas, x, y):
+        self.x = x
+        self.y = y
+        self.life = 1
+        item = canvas.create_rectangle(x, y, x + 150, y + 20, fill="red", outline="black")
+        super(Brick, self).__init__(canvas, item)
+
+    
+
 
 class Game(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        self.width = 900
-        self.height = 600
+        self.width = 1200
+        self.height = 800
         self.canvas = tk.Canvas(self, bg='#4fc3f7', width=self.width, height=self.height)
         self.canvas.pack()
         self.pack()
@@ -74,18 +104,16 @@ class Game(tk.Frame):
         self.paddle = self.addPaddle()
         self.objects = []
         self.objects.append(self.paddle)
-
         self.setupGame()
         self.canvas.focus_set()
         self.canvas.bind('<KeyPress>', self.keyPress)
         self.canvas.bind('<KeyRelease>', self.keyRelease)
-        #self.canvas.bind('a', lambda event:self.paddle.move(-40))
 
 
     def addBall(self):
         if self.ball is not None:
            self.ball.deleteObject()
-        wtf = Ball(self.canvas, 50, 50)
+        wtf = Ball(self.canvas, 200, 200)
         return wtf
     
     def addPaddle(self):
@@ -93,9 +121,20 @@ class Game(tk.Frame):
             self.paddle.deleteObject()
         ret = Paddle(self.canvas, 150, 20)
         return ret
+    
+    def addBrick(self,x,y):
+        brick = Brick(self.canvas, x, y)
+        return brick
 
     def setupGame(self):
+        y = 0
         self.ball = self.addBall()
+        for i in range(3):
+            x = 0
+            for j in range(8):
+                self.objects.append(self.addBrick(x,y))
+                x += 150
+            y += 20
         self.text = self.canvas.create_text(300,300, text="press space", fill="black")
         self.canvas.focus_set()
         self.canvas.bind("<space>",lambda event: self.startGame())
@@ -114,7 +153,7 @@ class Game(tk.Frame):
             self.update()
         #self.paddle.move(self.paddle.offset, 0)
         #self.after(100,self.move)
-            if coords[3] >= 600: 
+            if coords[3] >= 800: 
                 self.ball.speed = 0
                 i = 0
                 self.after(1, self.setupGame())
@@ -129,7 +168,7 @@ class Game(tk.Frame):
         if coords[0] > 20:
             if key == 'a':
                 self.paddle.offset = -10
-        if coords[2] < 880:
+        if coords[2] < 1180:
             if key == 'd':
                 self.paddle.offset = 10
 
@@ -144,11 +183,12 @@ class Game(tk.Frame):
             for y in self.objects:
                 if x == y.item:
                     objects.append(y)
+        print(objects)
         self.ball.collide(objects, self.objects)
 
 
 
-root = tk.Tk()
-root.title = "brick breaker"
-game = Game(root)
+all = tk.Tk()
+all.title = "brick breaker"
+game = Game(all)
 game.mainloop()
